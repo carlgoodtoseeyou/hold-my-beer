@@ -1,0 +1,93 @@
+<style media="screen" type="text/css">
+            form{
+                border: 2px solid #ccc;
+                padding:20px;
+                display: inline-block;
+            }
+            input{
+                border-radius: 4px;
+                padding:4px;
+                border: 2px solid #ccc;
+                box-shadow: inset 1px 1px 2px rgba( 0,0,0,0.1);
+            }
+            label{
+                display: inline-block;
+                width:100px;
+            }
+        </style>
+
+<?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL); ini_set('display_errors', 1);
+
+//phpass 
+require_once "/home/carlton/public_html/PHPproject/includes/PasswordHash.php";
+   
+if (empty($_POST)){
+
+?>
+ <form name="registration" action="registersecure.php" method="POST">
+<label for "username">Username: </label>
+<input type="text" name="username"/><br />
+<label for "password">Password: </label>
+<input type="password" name="password"/><br />
+<label for "fname">First Name: </label>
+<input type="text" name="fname"/><br />
+<label for "lname">Last name: </label> 
+<input type="text" name="lname"/><br />
+<label for "email">Email: </label>
+<input type="text" name="email"/><br />
+<button type="submit">Submit</button>
+</form>
+<?php 
+}
+else{
+    
+    $form = $_POST;
+    $username = $form['username'];
+    $password = $form['password'];
+    $fname = $form['fname'];
+    $lname = $form['lname'];
+    $email = $form['email'];
+    $user = 'root';
+    $pass = 'pdt1848!';
+    $hash_obj = new PasswordHash(8, false);
+   
+//check for valid email 
+   if(filter_var($email, FILTER_VALIDATE_EMAIL)){
+       echo "Thank you for using a valid email adress.";
+   }
+   else{
+       die("Invalid Email, please go back and try again.");
+   }
+    
+   // because hashing greatly increases the size of a password, 
+   // if password is longer than 72 chars it risk DoS attakcs
+   if (strlen($password)>72){die("Password must be less than 73 characters.");
+   }
+   
+// if the password was hashed correctly it must be longer than 20 char,
+   // therefore if the hash is less than 20 characters phpass isn't 
+    $hash = $hash_obj->HashPassword($password);
+    if (strlen($hash)>=20){
+        try{
+            $db = new PDO('mysql:host=localhost;dbname=phpproject', $user, $pass);
+            $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        }
+        catch(PODException $e){
+            echo 'Something has gone terribly wrong!';
+        }
+    $sql = "INSERT INTO users (username, password, fname, lname, email)VALUES(:username, :password, :fname, :lname, :email)";
+    $query = $db->prepare($sql);
+    $result = $query->execute(array(':username'=>$username, ':password'=>$hash, ':fname'=>$fname,
+        ':lname'=>$lname, ':email'=>$email));
+    };
+    if ($result){
+        echo "Thanks for registering with us!";
+    } else {
+        echo "Sorry, an error occurred while editing the database. Contact the guy who built this garbage.";
+    };
+
+};
+
+?>
